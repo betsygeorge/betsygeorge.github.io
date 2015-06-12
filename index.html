@@ -9,29 +9,61 @@
 <body>
 <script type="text/javascript">
 
-    var width = 1000;
-    var height = 200;
+    var width = 1250;
+    var height = 2000;
 
-    var svg = d3.select("body").append("svg")
-        .attr("height", height)
-        .attr("width", width);
+    var numberOfColumns = 2;
+    var numberOfRows = 5;
+    var numberOfCharts = numberOfColumns * numberOfRows;
+    var verticalPadding = 10;
+    var horizontalPadding = 20;
 
-    svg.append("rect")
-        .attr("height", height)
-        .attr("width", width)
-        .attr("fill", "black");
+    var chartHeight = height / numberOfRows - (verticalPadding * (numberOfRows + 1));
+    if (chartHeight > 200) chartHeight = 200;
+    var chartWidth = width / numberOfColumns - horizontalPadding * (numberOfColumns + 1);
 
-    var xAxis = svg.append("line")
-        .attr({
-            "x1": 0,
-            "x2": width,
-            "y1": height / 2,
-            "y2": height / 2,
-            "stroke":"white"
-        })
+    var numberOfSweeps = 5;
+    var sweepWidth = chartWidth / numberOfSweeps;
+    var chartBorder = 10;
 
-    var numberOfSweeps = 14;
-    var sweepWidth = width / numberOfSweeps;
+    var charts = new Array();
+
+    function addRectangles() {
+        var chartX = verticalPadding;
+        var chartY = horizontalPadding;
+        var chartNumber = 0;
+
+        for (rowCount = 0; rowCount < numberOfRows; rowCount++) {
+            for (columnCount = 0; columnCount < numberOfColumns; columnCount++) {
+
+                var chart = d3.select("body").append("svg")
+                   .attr("id", "chart" + chartNumber)
+                   .attr("height", chartHeight)
+                   .attr("width", chartWidth);
+
+                var displayWidth = chartWidth - chartBorder;
+                chart.append("rect")
+                    .attr("height", chartHeight - chartBorder)
+                    .attr("width", displayWidth)
+                    .attr("x", chartBorder / 2)
+                    .attr("y", chartBorder / 2)
+                    .attr("fill", "black");
+
+                charts[chartNumber] = chart;
+
+                chart.append("line")
+                    .attr("x1", 0)
+                    .attr("x2", chartWidth)
+                    .attr("y1", chartHeight / 2 + chartBorder / 2)
+                    .attr("y2", chartHeight / 2 + chartBorder / 2)
+                    .attr("stroke", "white");
+
+                chartNumber++;
+                chartX += chartWidth + horizontalPadding;
+                chartY += chartHeight + verticalPadding;
+            }
+        }
+    }
 
     function newData(points) {
         return d3.range(points).map(function (i) {
@@ -42,42 +74,49 @@
 
     var lineFunction = d3.svg.line()
         .x(function (d) { return d.x; })
-        .y(function (d) { return height/2 - d.y; })
+        .y(function (d) { return verticalPadding + chartHeight/2 - d.y; })
         .interpolate("linear");
 
     var currentSweep = 0;
 
     function render() {
 
-        var data = newData(25);
-        var blankSweep = currentSweep + 1;
-        if (blankSweep == numberOfSweeps)
-            blankSweep = 0;
+        for (count = 0; count < numberOfCharts; count++) {
 
-        var currentSweepClassName = "sweep" + currentSweep;
-        var blankSweepClassName = "sweep" + blankSweep;
+            var data = newData(30);
+            var blankSweep = currentSweep + 1;
+            if (blankSweep == numberOfSweeps)
+                blankSweep = 0;
 
-        // remove the blank sweep
-        d3.select("." + blankSweepClassName).remove();
-        // remove the current sweep
-        d3.select("." + currentSweepClassName).remove();
+            var chart = charts[count];
 
-        var currentSweepX = currentSweep * sweepWidth;
+            var currentSweepClassName = "chart" + count + "sweep" + currentSweep;
+            var blankSweepClassName = "chart" + count + "sweep" + blankSweep;
 
-        var line = svg.append("path")
-            .attr({
-                d: lineFunction(data),
-                "class": currentSweepClassName,
-                "stroke": "#fff",
-                "fill": "none",
-                "transform": "translate(" + currentSweepX + ",0)"
-            });
+            // remove the blank sweep
+            d3.select("." + blankSweepClassName).remove();
+            // remove the current sweep
+            d3.select("." + currentSweepClassName).remove();
+
+            var currentSweepX = currentSweep * sweepWidth;
+
+            var chart = charts[count];
+            var line = chart.append("path")
+                .attr({
+                    d: lineFunction(data),
+                    "class": currentSweepClassName,
+                    "stroke": "#fff",
+                    "fill": "none",
+                    "transform": "translate(" + currentSweepX + ",0)"
+                });
+        }
 
         currentSweep += 1;
         if (currentSweep > numberOfSweeps - 1)
             currentSweep = 0;
     }
 
+    addRectangles();
     render();
     setInterval(render, 75);
 </script>
